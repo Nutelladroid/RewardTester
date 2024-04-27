@@ -47,7 +47,7 @@ class RewardTester(BaseScript):
         # ***PRINT SETTINGS***
         self.print_individual_rewards = True  # True / False
         self.print_individual_total_rewards = True  # True / False
-        self.print_general_rewards = False  # True / False
+        self.print_general_rewards = True  # True / False
         self.players_to_print = [0, 1]  # List of player IDs to print example = [0, 1], or None to print all players
 
         # Create a dictionary that maps reward functions to their weights
@@ -71,8 +71,8 @@ class RewardTester(BaseScript):
                 'negative_throttle': 0.0,
                 'positive_pitch': 0.0,
                 'negative_pitch': 0.0,
-                'positive_roll': 1.0,
-                'negative_roll': -1.0,
+                'positive_roll': 0.0,
+                'negative_roll': 0.0,
                 'jump': 0.0,
                 'boost': 0.0,
                 'handbrake': 0.0,
