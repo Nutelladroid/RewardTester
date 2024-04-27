@@ -277,9 +277,6 @@ class AerialDistanceReward:
         return rew / (2 * 5120)
 
 
-#The input rewards need to use global_player_data
-#TODO make it not use global
-
 class PositiveRollReward:
     def __init__(self, height_threshold=300.0, distance_threshold=500.0):
         self.height_threshold = height_threshold
@@ -289,7 +286,7 @@ class PositiveRollReward:
         reward = 0.0
         if player_data.car_data.position[2] > self.height_threshold and \
            np.linalg.norm(player_data.car_data.position - game_state.ball.position) < self.distance_threshold and \
-           global_player_data[player_data.car_id].roll_input > 0.0:
+           player_data.roll_input > 0.0:
             reward = 1.0
         return reward
 
@@ -301,43 +298,43 @@ class HoldInputReward:
         reward = 0
 
         # Steer input
-        if global_player_data[player_data.car_id].steer_input > 0:
+        if player_data.steer_input > 0:
             reward += self.weights['positive_steer']
-        elif global_player_data[player_data.car_id].steer_input < 0:
+        elif player_data.steer_input < 0:
             reward += self.weights['negative_steer']
 
         # Throttle input
-        if global_player_data[player_data.car_id].throttle_input > 0:
+        if player_data.throttle_input > 0:
             reward += self.weights['positive_throttle']
-        elif global_player_data[player_data.car_id].throttle_input < 0:
+        elif player_data.throttle_input < 0:
             reward += self.weights['negative_throttle']
 
         # Pitch input
-        if global_player_data[player_data.car_id].pitch_input > 0:
+        if player_data.pitch_input > 0:
             reward += self.weights['positive_pitch']
-        elif global_player_data[player_data.car_id].pitch_input < 0:
+        elif player_data.pitch_input < 0:
             reward += self.weights['negative_pitch']
 
         # Roll input
-        if global_player_data[player_data.car_id].roll_input > 0:
+        if player_data.roll_input > 0:
             reward += self.weights['positive_roll']
-        elif global_player_data[player_data.car_id].roll_input < 0:
+        elif player_data.roll_input < 0:
             reward += self.weights['negative_roll']
 
         # Jump input
-        if global_player_data[player_data.car_id].jump_input:
+        if player_data.jump_input:
             reward += self.weights['jump']
 
         # Boost input
-        if global_player_data[player_data.car_id].boost_input:
+        if player_data.boost_input:
             reward += self.weights['boost']
 
         # Handbrake input
-        if global_player_data[player_data.car_id].handbrake_input:
+        if player_data.handbrake_input:
             reward += self.weights['handbrake']
 
         # Use item input
-        if global_player_data[player_data.car_id].use_item_input:
+        if player_data.use_item_input:
             reward += self.weights['use_item']
 
         return reward

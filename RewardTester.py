@@ -45,9 +45,9 @@ class RewardTester(BaseScript):
         self.player_data = None
 
         # ***PRINT SETTINGS***
-        self.print_individual_rewards = True  
-        self.print_individual_total_rewards = True  
-        self.print_general_rewards = True
+        self.print_individual_rewards = True  # True / False
+        self.print_individual_total_rewards = True  # True / False
+        self.print_general_rewards = False  # True / False
         self.players_to_print = [0, 1]  # List of player IDs to print example = [0, 1], or None to print all players
 
         # Create a dictionary that maps reward functions to their weights
@@ -71,8 +71,8 @@ class RewardTester(BaseScript):
                 'negative_throttle': 0.0,
                 'positive_pitch': 0.0,
                 'negative_pitch': 0.0,
-                'positive_roll': 0.0,
-                'negative_roll': 0.0,
+                'positive_roll': 1.0,
+                'negative_roll': -1.0,
                 'jump': 0.0,
                 'boost': 0.0,
                 'handbrake': 0.0,
@@ -107,24 +107,36 @@ class RewardTester(BaseScript):
         }
 
     def calculate_reward(self, player_data: PlayerData) -> float:
+        # Synchronize player data with global player data
+        player_data.steer_input = global_player_data[player_data.car_id].steer_input
+        player_data.throttle_input = global_player_data[player_data.car_id].throttle_input
+        player_data.pitch_input = global_player_data[player_data.car_id].pitch_input
+        player_data.roll_input = global_player_data[player_data.car_id].roll_input
+        player_data.jump_input = global_player_data[player_data.car_id].jump_input
+        player_data.boost_input = global_player_data[player_data.car_id].boost_input
+        player_data.handbrake_input = global_player_data[player_data.car_id].handbrake_input
+        player_data.use_item_input = global_player_data[player_data.car_id].use_item_input
+
         reward = 0
         for reward_function, weight in self.reward_functions.items():
             reward += reward_function.get_reward(player_data, self.game_state, None) * weight
         return reward
+
+
 
     def handle_input_change(self, change: PlayerInputChange, seconds: float, frame_num: int):
         player_index = change.PlayerIndex()
         controller_state = change.ControllerState()
 
         global_player_data[player_index].car_id = player_index
-        global_player_data[player_index].steer_input = controller_state.Steer()
-        global_player_data[player_index].throttle_input = controller_state.Throttle()
-        global_player_data[player_index].pitch_input = controller_state.Pitch()
-        global_player_data[player_index].roll_input = controller_state.Roll()
-        global_player_data[player_index].jump_input = controller_state.Jump()
-        global_player_data[player_index].boost_input = controller_state.Boost()
-        global_player_data[player_index].handbrake_input = controller_state.Handbrake()
-        global_player_data[player_index].use_item_input = controller_state.UseItem()
+        global_player_data[player_index]._steer_input = controller_state.Steer()
+        global_player_data[player_index]._throttle_input = controller_state.Throttle()
+        global_player_data[player_index]._pitch_input = controller_state.Pitch()
+        global_player_data[player_index]._roll_input = controller_state.Roll()
+        global_player_data[player_index]._jump_input = controller_state.Jump()
+        global_player_data[player_index]._boost_input = controller_state.Boost()
+        global_player_data[player_index]._handbrake_input = controller_state.Handbrake()
+        global_player_data[player_index]._use_item_input = controller_state.UseItem()
 
 
 
