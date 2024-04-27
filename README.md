@@ -10,7 +10,7 @@ Script for RLBot which prints reward values.
 ## How to use
 ### Add the script to RLBot
 
-Add the cfg file to RLbot. Remeber to toggle Reward Tester in the script section once added.
+Add the cfg file to RLbot. Remember to toggle Reward Tester in the script section once added.
 
 ### Add Reward
 
