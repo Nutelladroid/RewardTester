@@ -27,7 +27,7 @@ from reward_functions import (
     LiuDistancePlayerToBallReward,
     AerialDistanceReward,
     PositiveRollReward,
-    HoldInputReward
+    HoldInputReward,
 )
 
 class RewardTester(BaseScript):
@@ -45,22 +45,31 @@ class RewardTester(BaseScript):
         self.player_data = None
 
         # ***PRINT SETTINGS***
-        self.print_individual_rewards = True  # True / False
-        self.print_individual_total_rewards = True  # True / False
-        self.print_general_rewards = True  # True / False
-        self.players_to_print = [0, 1]  # List of player IDs to print example = [0, 1], or None to print all players
+        self.print_individual_rewards = True  
+        self.print_individual_total_rewards = True  
+        self.print_general_rewards = True  
+        self.players_to_print = None #[0, 1]  # List of player IDs to print example = [0, 1], or None to print all players
+
+        # ***RENDER SETTINGS***
+        self.enable_rendering = True  
+        self.enable_individual_reward_rendering = True
+        self.enable_general_reward_rendering = True 
+        self.render_duration = 0.1  # Clear the text after x seconds
+        self.last_render_time = 0
+        self.render_text_queue = []  # List to store the text to be rendered
+        self.players_to_render = self.players_to_print  # Default to the same as players_to_print
 
         # Create a dictionary that maps reward functions to their weights
         self.reward_functions = {
             EventReward({
-                'teamGoal': 50.0,
-                'concede': -50.0,
+                'teamGoal': 00.0,
+                'concede': -00.0,
                 'touch': 0.0,
                 'shot': 0.0,
                 'save': 0.0,
                 'demo': 0.0,
                 'demoed': -0.0,
-                'boostPickup': 0.0,
+                'boostPickup': 0.00,
                 'assist': 0.0
             }): 1.0,
             
@@ -77,7 +86,7 @@ class RewardTester(BaseScript):
                 'boost': 0.0,
                 'handbrake': 0.0,
                 'use_item': 0.0
-            }): 1.0,
+            }): 0.0,
             
             FaceBallReward(): 0.0,
             
@@ -104,6 +113,7 @@ class RewardTester(BaseScript):
             AerialDistanceReward(height_scale=10.0, distance_scale=10.0, ang_vel_w=0.0): 0.0,
             
             PositiveRollReward(height_threshold=300.0, distance_threshold=300.0): 0.0,
+            
         }
 
     def calculate_reward(self, player_data: PlayerData) -> float:
@@ -138,8 +148,6 @@ class RewardTester(BaseScript):
         global_player_data[player_index]._handbrake_input = controller_state.Handbrake()
         global_player_data[player_index]._use_item_input = controller_state.UseItem()
 
-
-
     def start(self):
         print("Connecting SocketRelay...")
         self.socket_relay.player_input_change_handlers.append(self.handle_input_change)
@@ -153,6 +161,7 @@ class RewardTester(BaseScript):
 
             if not packet.game_info.is_round_active:
                 self.reset_game_state(packet)
+                self.clear_text_if_expired()
                 continue
 
             self.ticks += 1
@@ -164,6 +173,8 @@ class RewardTester(BaseScript):
             self.game_state.decode(packet)
             self.reset_game_state(packet)
 
+            if self.players_to_render is None:
+                self.players_to_render = list(range(len(self.game_state.players)))
             step_reward = 0
             player_rewards = []
             for player_data in self.game_state.players:
@@ -181,8 +192,6 @@ class RewardTester(BaseScript):
                 if self.print_individual_rewards and (self.players_to_print is None or player_data.car_id in self.players_to_print):
                     print(f"Player {player_data.car_id} current reward: {self.player_rewards[player_data.car_id]['current_reward']:.6f}")
                     print(f"Player {player_data.car_id} average step reward: {self.player_rewards[player_data.car_id]['average_step_reward']:.6f}")
-                if self.print_individual_total_rewards and (self.players_to_print is None or player_data.car_id in self.players_to_print):
-                    print(f"Player {player_data.car_id} total reward: {self.player_rewards[player_data.car_id]['total_reward']:.6f}")
 
             self.total_step_reward += step_reward
             self.num_steps += 1
@@ -192,15 +201,66 @@ class RewardTester(BaseScript):
             for player_id, player_data in self.player_rewards.items():
                 player_data['average_step_reward'] = player_data['total_reward'] / self.num_steps
 
+            if self.print_individual_total_rewards:
+                for player_id, player_data in self.player_rewards.items():
+                    if self.players_to_print is None or player_id in self.players_to_print:
+                        print(f"Player {player_id} total reward: {player_data['total_reward']:.6f}")
+
             if self.print_general_rewards:
                 print(f"Total step reward: {step_reward:.6f}")
                 print(f"Total average step reward: {self.total_average_step_reward:.6f}")
                 print(f"Total cumulative reward: {self.total_cumulative_reward:.6f}")
+
+            # Append the individual player data to the render queue
+            if self.enable_individual_reward_rendering:
+                for player_id in self.players_to_render:
+                    if player_id in self.player_rewards:
+                        self.render_text_queue.append(f"Player {player_id} current reward: {self.player_rewards[player_id]['current_reward']:.6f}\n")
+                        self.render_text_queue.append(f"Player {player_id} average step reward: {self.player_rewards[player_id]['average_step_reward']:.6f}\n")
+                        self.render_text_queue.append(f"Player {player_id} total reward: {self.player_rewards[player_id]['total_reward']:.6f}\n")
+            # Append the general reward text to the render queue
+            if self.enable_general_reward_rendering:
+                self.render_text_queue.append(f"Total step reward: {step_reward:.6f}\n")
+                self.render_text_queue.append(f"Total average step reward: {self.total_average_step_reward:.6f}\n")
+                self.render_text_queue.append(f"Total cumulative reward: {self.total_cumulative_reward:.6f}\n")
+
+            self.render_all_text()
+
             print("--------------------------")
+
+    def render_all_text(self):
+        if self.enable_rendering and self.render_text_queue:
+            self.game_interface.renderer.begin_rendering()
+            y_offset = 30
+            x_offset = 20
+            render_count = 0
+            total_text = len(self.render_text_queue)-(self.enable_general_reward_rendering)*3
+            if total_text > 0:
+                for text in self.render_text_queue:
+                    self.game_interface.renderer.draw_string_2d(x_offset, y_offset, 1, 1, text, self.renderer.lime())
+                    y_offset += 30
+                    render_count += 1
+                    if render_count % ((total_text) // 2) == 0:
+                        if x_offset == 20:
+                            x_offset = 1500
+                            y_offset -= 30*((total_text) // 2)
+                        else:
+                            x_offset = 20
+            self.game_interface.renderer.end_rendering()
+            self.last_render_time = time.time()
+            self.render_text_queue.clear()  # Clear the render queue after rendering
 
 
     def reset_game_state(self, packet):
         self.game_state.decode(packet)
+
+    def clear_text_if_expired(self):
+        if self.enable_rendering and time.time() - self.last_render_time > self.render_duration:
+            self.game_interface.renderer.begin_rendering()
+            self.game_interface.renderer.draw_string_2d(20, 100, 1, 1, "", self.renderer.lime())
+            self.game_interface.renderer.end_rendering()
+
+
 
 if __name__ == "__main__":
     reward_tester = RewardTester()
