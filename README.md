@@ -57,7 +57,7 @@ self.tick_skip = 8
 ```
 ### 6. Run the Game
 
-Run the game in window mode and observe the terminal output and on-screen rendering.
+Run the game in window mode to observe the terminal output. On-screen rendering works in fullscreen or window mode. If you're not seeing rendering make sure rendering is enable both in RLBot and in the `RewardTester.py` rendering settings. You can press the keyboard key `R` to reset all the cumulative rewards.
 
 ## Warning
 
