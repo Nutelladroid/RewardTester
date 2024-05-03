@@ -1,5 +1,6 @@
 import time
 import numpy as np
+import keyboard
 
 from rlbot.agents.base_script import BaseScript
 from rlbot.utils.game_state_util import GameState, BallState, CarState, Physics, Vector3, Rotator, GameInfoState
@@ -62,8 +63,8 @@ class RewardTester(BaseScript):
         # Create a dictionary that maps reward functions to their weights
         self.reward_functions = {
             EventReward({
-                'teamGoal': 00.0,
-                'concede': -00.0,
+                'teamGoal': 0.0,
+                'concede': -0.0,
                 'touch': 0.0,
                 'shot': 0.0,
                 'save': 0.0,
@@ -116,6 +117,20 @@ class RewardTester(BaseScript):
             
         }
 
+        self.reset_thread = threading.Thread(target=self.reset_rewards, daemon=True)
+        self.reset_thread.start()
+
+    def reset_rewards(self):
+        while True:
+            if keyboard.is_pressed('r'):
+                self.total_step_reward = 0
+                self.total_average_step_reward = 0
+                self.total_cumulative_reward = 0
+                self.num_steps = 0
+                self.player_rewards = {}
+                print("Rewards reset.")
+            time.sleep(0.1)
+
     def calculate_reward(self, player_data: PlayerData) -> float:
         # Synchronize player data with global player data
         player_data.steer_input = global_player_data[player_data.car_id].steer_input
@@ -131,8 +146,6 @@ class RewardTester(BaseScript):
         for reward_function, weight in self.reward_functions.items():
             reward += reward_function.get_reward(player_data, self.game_state, None) * weight
         return reward
-
-
 
     def handle_input_change(self, change: PlayerInputChange, seconds: float, frame_num: int):
         player_index = change.PlayerIndex()
@@ -250,7 +263,6 @@ class RewardTester(BaseScript):
             self.last_render_time = time.time()
             self.render_text_queue.clear()  # Clear the render queue after rendering
 
-
     def reset_game_state(self, packet):
         self.game_state.decode(packet)
 
@@ -259,8 +271,6 @@ class RewardTester(BaseScript):
             self.game_interface.renderer.begin_rendering()
             self.game_interface.renderer.draw_string_2d(20, 100, 1, 1, "", self.renderer.lime())
             self.game_interface.renderer.end_rendering()
-
-
 
 if __name__ == "__main__":
     reward_tester = RewardTester()
